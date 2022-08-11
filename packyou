@@ -27,7 +27,7 @@ LDFLAGS = ["-" + flag for flag in args.ldflags] if args.ldflags else ["-lgdi32"]
 
 OBFUSCATE = args.obfuscate
 
-objects = ["pack_you_res.o"]
+objects = ["resource/packyou_res.o"]
 
 match OBFUSCATE:
     case "zstd":
@@ -40,26 +40,26 @@ match OBFUSCATE:
         subprocess.run(p_args)
         UNPACKED = UNPACKED + ".zst"
 
-        p_args = [CC] + [i for i in CFLAGS] + ["-DOBFUSCATE", "-DREAL_SIZE=" + real_size, "-c", "-o", "pack_you_res.o",
-                                               "pack_you_res.c"]
-        print("\nCompiling pack_you_res.c...\n" + " ".join(arg for arg in p_args))
-        subprocess.run(p_args)
+        p_args = [CC] + [i for i in CFLAGS] + ["-DOBFUSCATE", "-DREAL_SIZE=" + real_size, "-c", "-o", "packyou_res.o",
+                                               "packyou_res.c"]
+        print("\nCompiling packyou_res.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args, cwd="resource")
 
         p_args = [CC] + [i for i in CFLAGS] + ["-c", "-o", "zstd.o", "zstd.c"]
         print("\nCompiling zstd.c...\n" + " ".join(arg for arg in p_args))
-        subprocess.run(p_args)
-        objects.append("zstd.o")
+        subprocess.run(p_args, cwd="obfuscation")
+        objects.append("obfuscation/zstd.o")
 
     case _:
-        p_args = [CC] + [i for i in CFLAGS] + ["-c", "-o", "pack_you_res.o", "pack_you_res.c"]
-        print("Compiling pack_you_res.c...\n" + " ".join(arg for arg in p_args))
-        subprocess.run(p_args)
+        p_args = [CC] + [i for i in CFLAGS] + ["-c", "-o", "packyou_res.o", "packyou_res.c"]
+        print("Compiling packyou_res.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args, cwd="resource")
 
-p_args = [RC, "pack_you_res.rc", "-DUNPACKED=" + UNPACKED, "-O", "coff", "-o", "pack_you_res.res"]
-print("\nCompiling pack_you_res.rc...\n" + " ".join(arg for arg in p_args))
+p_args = [RC, "resource/packyou_res.rc", "-DUNPACKED=" + UNPACKED, "-O", "coff", "-o", "resource/packyou_res.res"]
+print("\nCompiling packyou_res.rc...\n" + " ".join(arg for arg in p_args))
 subprocess.run(p_args)
 
-p_args = [CC, "-o", PACKED] + [i for i in objects] + [i for i in LDFLAGS] + ["pack_you_res.res"]
+p_args = [CC, "-o", PACKED] + [i for i in objects] + [i for i in LDFLAGS] + ["resource/packyou_res.res"]
 print("\nCompiling packed executable...\n" + " ".join(arg for arg in p_args))
 subprocess.run(p_args)
 

@@ -4,7 +4,7 @@
 #include "resource.h"
 
 #ifdef OBFUSCATE
-#include "obfuscate.h"
+#include "../obfuscation/obfuscate.h"
 #endif
 
 int unpack()
