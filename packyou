@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+
+import argparse
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-u", "--unpacked", help="Path of unpacked executable", required=True)
+parser.add_argument("-p", "--packed", help="Path of packed (output) executable", required=False)
+parser.add_argument("-cc", "--cross_compiler", help="Path of cross compiler executable", required=False)
+parser.add_argument("-rc", "--resource_compiler", help="Path of resource compiler executable", required=False)
+parser.add_argument("-cf", "--cflags", help="Compiler flags, separated by a comma", required=False)
+parser.add_argument("-lf", "--ldflags", help="Linker flags, separated by a comma", required=False)
+parser.add_argument("-o", "--obfuscate", help="Type of obfuscation", required=False)
+args = parser.parse_args()
+
+UNPACKED = args.unpacked
+
+PACKED = args.packed if args.packed else UNPACKED[0:-4] + "_packed.exe"
+
+CC = args.cross_compiler if args.cross_compiler else "/usr/bin/i686-w64-mingw32-gcc"
+
+RC = args.resource_compiler if args.resource_compiler else "/usr/bin/i686-w64-mingw32-windres"
+
+CFLAGS = ["-" + flag for flag in args.cflags.split(",")] if args.cflags else ["-Wall", "-Wextra"]
+
+LDFLAGS = ["-" + flag for flag in args.ldflags] if args.ldflags else ["-lgdi32"]
+
+OBFUSCATE = args.obfuscate
+
+objects = ["pack_you_res.o"]
+
+match OBFUSCATE:
+    case "zstd":
+        subprocess.run(["./create_single_file_decoder.sh"], cwd="zstd/build/single_file_libs")
+
+        size_process = subprocess.run(["wc", "-c"], stdout=subprocess.PIPE, stdin=open(UNPACKED), text=True)
+        real_size = size_process.stdout[:-1]
+        p_args = ["zstd", "-f", "-q", "-19", UNPACKED]
+        print("\nZstd compressing...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args)
+        UNPACKED = UNPACKED + ".zst"
+
+        p_args = [CC] + [i for i in CFLAGS] + ["-DOBFUSCATE", "-DREAL_SIZE=" + real_size, "-c", "-o", "pack_you_res.o",
+                                               "pack_you_res.c"]
+        print("\nCompiling pack_you_res.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args)
+
+        p_args = [CC] + [i for i in CFLAGS] + ["-c", "-o", "zstd.o", "zstd.c"]
+        print("\nCompiling zstd.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args)
+        objects.append("zstd.o")
+
+    case _:
+        p_args = [CC] + [i for i in CFLAGS] + ["-c", "-o", "pack_you_res.o", "pack_you_res.c"]
+        print("Compiling pack_you_res.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args)
+
+p_args = [RC, "pack_you_res.rc", "-DUNPACKED=" + UNPACKED, "-O", "coff", "-o", "pack_you_res.res"]
+print("\nCompiling pack_you_res.rc...\n" + " ".join(arg for arg in p_args))
+subprocess.run(p_args)
+
+p_args = [CC, "-o", PACKED] + [i for i in objects] + [i for i in LDFLAGS] + ["pack_you_res.res"]
+print("\nCompiling packed executable...\n" + " ".join(arg for arg in p_args))
+subprocess.run(p_args)
+
+print("\nDone!")
