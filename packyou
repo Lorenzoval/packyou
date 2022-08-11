@@ -33,7 +33,8 @@ match OBFUSCATE:
     case "zstd":
         subprocess.run(["./create_single_file_decoder.sh"], cwd="zstd/build/single_file_libs")
 
-        size_process = subprocess.run(["wc", "-c"], stdout=subprocess.PIPE, stdin=open(UNPACKED), text=True)
+        with open(UNPACKED) as file:
+            size_process = subprocess.run(["wc", "-c"], stdout=subprocess.PIPE, stdin=file, text=True)
         real_size = size_process.stdout[:-1]
         p_args = ["zstd", "-f", "-q", "-19", UNPACKED]
         print("\nZstd compressing...\n" + " ".join(arg for arg in p_args))
