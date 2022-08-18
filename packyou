@@ -24,7 +24,7 @@ rc = args.resource_compiler if args.resource_compiler else "/usr/bin/i686-w64-mi
 
 cflags = ["-" + flag for flag in args.cflags.split(",")] if args.cflags else ["-Wall", "-Wextra"]
 
-ldflags = ["-" + flag for flag in args.ldflags] if args.ldflags else ["-lgdi32"]
+ldflags = ["-" + flag for flag in args.ldflags] if args.ldflags else []
 
 obfuscate = args.obfuscate
 
