@@ -61,7 +61,7 @@ match mode:
         print("\nGenerating packed.h...")
         with open("self_injection/packed.h", "w") as header:
             with open(unpacked, "rb") as unpacked:
-                header.write("unsigned char packed[] __attribute__((section (\".packyou\"))) = { ")
+                header.write("unsigned char packed[] __attribute__((section (\"packyou\"))) = { ")
                 header.write("0x" + unpacked.read(1).hex())
                 while True:
                     byte = unpacked.read(1).hex()
