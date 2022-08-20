@@ -2,6 +2,7 @@
 
 import argparse
 import subprocess
+import pefile
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-u", "--unpacked", help="Path of unpacked executable", required=True)
@@ -58,10 +59,17 @@ additional = []
 
 match mode:
     case "si":
-        print("\nGenerating section.c...")
-        with open("self_injection/section.c", "w") as c_file:
+        # Extract information from unpacked pe
+        pe = pefile.PE(args.unpacked)
+        image_base = pe.OPTIONAL_HEADER.ImageBase
+        image_size = pe.OPTIONAL_HEADER.SizeOfImage
+
+        ldflags.append("-Wl,--image-base=" + hex(image_base))
+
+        print("\nGenerating payload.c...")
+        with open("self_injection/payload.c", "w") as c_file:
             with open(unpacked, "rb") as unpacked:
-                c_file.write("#include \"section.h\"\n\nunsigned char section[] = { ")
+                c_file.write("#include \"payload.h\"\n\nunsigned char payload[] = { ")
                 c_file.write("0x" + unpacked.read(1).hex())
                 file_size = 1
                 while True:
@@ -71,13 +79,19 @@ match mode:
                     c_file.write(", 0x" + byte)
                     file_size += 1
 
+                # Make sure there is enough memory for the unpacked process by filling the remaining bytes with NOP
+                written_size = file_size
+                while written_size < image_size:
+                    c_file.write(", 0x90")
+                    written_size += 1
+
                 cflags.append("-DFILE_SIZE=" + str(file_size))
                 c_file.write(" };\n")
 
-        p_args = [cc] + ["-c", "-o", "section.o", "section.c"]
-        print("\nCompiling section.c...\n" + " ".join(arg for arg in p_args))
+        p_args = [cc] + ["-c", "-o", "payload.o", "payload.c"]
+        print("\nCompiling payload.c...\n" + " ".join(arg for arg in p_args))
         subprocess.run(p_args, cwd="self_injection")
-        objects.append("self_injection/section.o")
+        objects.append("self_injection/payload.o")
 
         p_args = [cc] + [i for i in cflags] + ["-c", "-o", "packyou_si.o", "packyou_si.c"]
         print("\nCompiling packyou_si.c...\n" + " ".join(arg for arg in p_args))

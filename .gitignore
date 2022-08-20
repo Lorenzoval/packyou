@@ -2,4 +2,4 @@
 *.res
 *.exe
 *.zst
-self_injection/section.c
+self_injection/payload.c

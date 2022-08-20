@@ -1,19 +1,20 @@
 #include <stdio.h>
 #include <windows.h>
 
-#include "section.h"
+#include "payload.h"
 
 #ifdef OBFUSCATE
 #include "../obfuscation/obfuscate.h"
 #endif
 
+__attribute__((section("packyou")))
 int unpack()
 {
 	SIZE_T size = (SIZE_T)FILE_SIZE;
 	BYTE *base;
 
 #ifdef OBFUSCATE
-	base = deobfuscate(section, size, (SIZE_T)REAL_SIZE);
+	base = deobfuscate(payload, size, (SIZE_T)REAL_SIZE);
 	if (base == NULL)
 		return GetLastError();
 	size = (SIZE_T)REAL_SIZE;
@@ -21,7 +22,7 @@ int unpack()
 	base = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
 	if (base == NULL)
 		return GetLastError();
-	memcpy(base, section, size);
+	memcpy(base, payload, size);
 #endif
 
 	HANDLE file =
@@ -63,6 +64,7 @@ int unpack()
 	return ERROR_SUCCESS;
 }
 
+__attribute__((section("packyou")))
 int main()
 {
 	int ret = unpack();
