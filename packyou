@@ -58,17 +58,26 @@ additional = []
 
 match mode:
     case "si":
-        print("\nGenerating packed.h...")
-        with open("self_injection/packed.h", "w") as header:
+        print("\nGenerating section.c...")
+        with open("self_injection/section.c", "w") as c_file:
             with open(unpacked, "rb") as unpacked:
-                header.write("#pragma once\n\nunsigned char packed[] __attribute__((section (\"packyou\"))) = { ")
-                header.write("0x" + unpacked.read(1).hex())
+                c_file.write("#include \"section.h\"\n\nunsigned char section[] = { ")
+                c_file.write("0x" + unpacked.read(1).hex())
+                file_size = 1
                 while True:
                     byte = unpacked.read(1).hex()
                     if not byte:
                         break
-                    header.write(", 0x" + byte)
-                header.write(" };\n")
+                    c_file.write(", 0x" + byte)
+                    file_size += 1
+
+                cflags.append("-DFILE_SIZE=" + str(file_size))
+                c_file.write(" };\n")
+
+        p_args = [cc] + ["-c", "-o", "section.o", "section.c"]
+        print("\nCompiling section.c...\n" + " ".join(arg for arg in p_args))
+        subprocess.run(p_args, cwd="self_injection")
+        objects.append("self_injection/section.o")
 
         p_args = [cc] + [i for i in cflags] + ["-c", "-o", "packyou_si.o", "packyou_si.c"]
         print("\nCompiling packyou_si.c...\n" + " ".join(arg for arg in p_args))
