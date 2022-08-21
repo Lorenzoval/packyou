@@ -47,6 +47,7 @@ __attribute__((section("packyou"))) int unpack()
 		(IMAGE_SECTION_HEADER *)(((BYTE *)nt_header) +
 					 sizeof(IMAGE_NT_HEADERS));
 
+	/* Write all sections and fill with 0 */
 	for (int i = 0; i < nt_header->FileHeader.NumberOfSections; i++) {
 		BYTE *dest = curr_proc_base + sections[i].VirtualAddress;
 		if (!VirtualProtect(dest, sections[i].Misc.VirtualSize,
@@ -61,6 +62,76 @@ __attribute__((section("packyou"))) int unpack()
 			else
 				dest[j] = 0;
 		}
+	}
+
+	/* Rebuild imports */
+	IMAGE_DATA_DIRECTORY *data_directory =
+		nt_header->OptionalHeader.DataDirectory;
+
+	/* Get import descriptors array */
+	IMAGE_IMPORT_DESCRIPTOR *import_descriptors =
+		(IMAGE_IMPORT_DESCRIPTOR
+			 *)(curr_proc_base +
+			    data_directory[IMAGE_DIRECTORY_ENTRY_IMPORT]
+				    .VirtualAddress);
+
+	/* The last entry of the array has all fields set to 0 */
+	int i = 0;
+	while (import_descriptors[i].OriginalFirstThunk != 0) {
+		/* Load current library */
+		LPCSTR lib_name =
+			(LPCSTR)(curr_proc_base + import_descriptors[i].Name);
+		HMODULE library = LoadLibrary(lib_name);
+		if (library == NULL)
+			return GetLastError();
+
+		/* OriginalFirstThunk contains the RVA of the ILT */
+		IMAGE_THUNK_DATA *lookup_table =
+			(IMAGE_THUNK_DATA *)(curr_proc_base +
+					     import_descriptors[i]
+						     .OriginalFirstThunk);
+
+		/* FirstThunk contains the RVA of the IAT */
+		IMAGE_THUNK_DATA *address_table =
+			(IMAGE_THUNK_DATA *)(curr_proc_base +
+					     import_descriptors[i].FirstThunk);
+
+		int j = 0;
+		while (lookup_table[j].u1.AddressOfData != 0) {
+			FARPROC fp = NULL;
+
+			/*
+			 * The high bit of the IMAGE_THUNK_DATA value tells if an
+			 * IMAGE_THUNK_DATA structure contains an import ordinal istead of
+			 * an RVA to an IMAGE_IMPORT_BY_NAME structure.
+			 * If set, the value is treated as an ordinal value.
+			 * Otherwise, the value is an RVA to the IMAGE_IMPORT_BY_NAME.
+			 */
+			DWORD value = lookup_table[j].u1.AddressOfData;
+
+			if ((value & IMAGE_ORDINAL_FLAG) == 0) {
+				IMAGE_IMPORT_BY_NAME *image_import =
+					(IMAGE_IMPORT_BY_NAME *)(curr_proc_base +
+								 value);
+
+				char *func_name = (char *)&(image_import->Name);
+
+				/* Get function address by name */
+				fp = (void *)GetProcAddress(library, func_name);
+			} else {
+				/* Get function address by ordinal */
+				fp = (void *)GetProcAddress(
+					library, (LPSTR)IMAGE_ORDINAL32(value));
+			}
+
+			if (fp == NULL)
+				return GetLastError();
+
+			/* Update the IAT */
+			address_table[j].u1.Function = (DWORD)fp;
+			j++;
+		}
+		i++;
 	}
 
 	/* Restore protection */
