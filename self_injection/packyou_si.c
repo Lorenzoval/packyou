@@ -7,7 +7,7 @@
 #include "../obfuscation/obfuscate.h"
 #endif
 
-__attribute__((section("packyou"))) int unpack()
+__attribute__((section("packyou"))) int unpack(void (**poep)(void))
 {
 	SIZE_T size = (SIZE_T)FILE_SIZE;
 	BYTE *base;
@@ -158,6 +158,9 @@ __attribute__((section("packyou"))) int unpack()
 			return GetLastError();
 	}
 
+	*poep = (void (*)(void))(curr_proc_base +
+				 nt_header->OptionalHeader.AddressOfEntryPoint);
+
 #ifdef OBFUSCATE
 	if (!clean(base))
 		return GetLastError();
@@ -171,10 +174,14 @@ __attribute__((section("packyou"))) int unpack()
 
 __attribute__((section("packyou"))) int main()
 {
-	int ret = unpack();
+	void (*oep)(void);
+
+	int ret = unpack(&oep);
 
 	if (ret != ERROR_SUCCESS)
 		printf("Error %d\n", ret);
+	else
+		oep();
 
 	return ret;
 }

@@ -9,8 +9,8 @@ parser.add_argument("-u", "--unpacked", help="Path of unpacked executable", requ
 parser.add_argument("-p", "--packed", help="Path of packed (output) executable", required=False)
 parser.add_argument("-cc", "--cross_compiler", help="Path of cross compiler executable", required=False)
 parser.add_argument("-rc", "--resource_compiler", help="Path of resource compiler executable", required=False)
-parser.add_argument("-cf", "--cflags", help="Compiler flags, separated by a comma", required=False)
-parser.add_argument("-lf", "--ldflags", help="Linker flags, separated by a comma", required=False)
+parser.add_argument("-cf", "--cflags", help="Compiler flags, separated by a semicolon", required=False)
+parser.add_argument("-lf", "--ldflags", help="Linker flags, separated by a semicolon", required=False)
 parser.add_argument("-o", "--obfuscate", help="Type of obfuscation", required=False)
 parser.add_argument("-m", "--mode", help="Packing mode", required=False)
 args = parser.parse_args()
@@ -23,9 +23,9 @@ cc = args.cross_compiler if args.cross_compiler else "/usr/bin/i686-w64-mingw32-
 
 rc = args.resource_compiler if args.resource_compiler else "/usr/bin/i686-w64-mingw32-windres"
 
-cflags = ["-" + flag for flag in args.cflags.split(",")] if args.cflags else ["-Wall", "-Wextra"]
+cflags = ["-" + flag for flag in args.cflags.split(";")] if args.cflags else ["-Wall", "-Wextra"]
 
-ldflags = ["-" + flag for flag in args.ldflags] if args.ldflags else []
+ldflags = ["-" + flag for flag in args.ldflags.split(";")] if args.ldflags else []
 
 obfuscate = args.obfuscate
 
@@ -64,7 +64,7 @@ match mode:
         image_base = pe.OPTIONAL_HEADER.ImageBase
         image_size = pe.OPTIONAL_HEADER.SizeOfImage
 
-        ldflags.append("-Wl,--image-base=" + hex(image_base))
+        ldflags.append("-Wl,--disable-dynamicbase,--image-base=" + hex(image_base))
 
         print("\nGenerating payload.c...")
         with open("self_injection/payload.c", "w") as c_file:
