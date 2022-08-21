@@ -1,3 +1,3 @@
 #pragma once
 
-extern unsigned char payload[] __attribute__((section(".text")));
+__attribute__((section(".text"))) extern unsigned char payload[];

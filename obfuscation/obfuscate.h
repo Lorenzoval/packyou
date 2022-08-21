@@ -2,5 +2,7 @@
 
 #include <windef.h>
 
-BYTE *deobfuscate(BYTE *mem, SIZE_T packed_size, SIZE_T unpacked_size);
-BOOL clean(BYTE *mem);
+__attribute__((section("packyou"))) BYTE *
+deobfuscate(BYTE *mem, SIZE_T packed_size, SIZE_T unpacked_size);
+
+__attribute__((section("packyou"))) BOOL clean(BYTE *mem);
