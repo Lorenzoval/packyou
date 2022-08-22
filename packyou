@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import os
 import subprocess
 import pefile
 
@@ -36,10 +37,8 @@ objects = []
 match obfuscate:
     case "zstd":
         subprocess.run(["./create_single_file_decoder.sh"], cwd="zstd/build/single_file_libs")
+        real_size = os.stat(unpacked).st_size
 
-        with open(unpacked) as file:
-            size_process = subprocess.run(["wc", "-c"], stdout=subprocess.PIPE, stdin=file, text=True)
-        real_size = size_process.stdout[:-1]
         p_args = ["zstd", "-f", "-q", "-19", unpacked]
         print("\nZstd compressing...\n" + " ".join(arg for arg in p_args))
         subprocess.run(p_args)
@@ -50,7 +49,7 @@ match obfuscate:
         subprocess.run(p_args, cwd="obfuscation")
         objects.append("obfuscation/zstd.o")
 
-        cflags.extend(["-DOBFUSCATE", "-DREAL_SIZE=" + real_size])
+        cflags.extend(["-DOBFUSCATE", "-DREAL_SIZE=" + str(real_size)])
 
     case _:
         pass
