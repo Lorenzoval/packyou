@@ -36,9 +36,9 @@ int unpack()
 	size = (SIZE_T)REAL_SIZE;
 #endif
 
-	HANDLE file =
-		CreateFile("svchost.exe", GENERIC_WRITE | GENERIC_READ, 0, NULL,
-			   CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE file = CreateFile("svchost.exe", GENERIC_WRITE | GENERIC_READ, 0,
+				 NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
+				 NULL);
 
 	if (file == INVALID_HANDLE_VALUE)
 		return GetLastError();

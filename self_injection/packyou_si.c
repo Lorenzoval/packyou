@@ -114,8 +114,8 @@ __attribute__((section("packyou"))) int unpack(void (**poep)(void))
 					(IMAGE_IMPORT_BY_NAME *)(curr_proc_base +
 								 value);
 
-				LPCSTR func_name =
-					(LPCSTR) & (image_import->Name);
+				LPCSTR func_name = (LPCSTR) &
+						   (image_import->Name);
 
 				/* Get function address by name */
 				fp = (void *)GetProcAddress(library, func_name);
@@ -144,10 +144,10 @@ __attribute__((section("packyou"))) int unpack(void (**poep)(void))
 
 	for (int i = 0; i < nt_header->FileHeader.NumberOfSections; i++) {
 		BYTE *dest = curr_proc_base + sections[i].VirtualAddress;
-		DWORD is_executable =
-			sections[i].Characteristics & IMAGE_SCN_MEM_EXECUTE;
-		DWORD is_writable =
-			sections[i].Characteristics & IMAGE_SCN_MEM_WRITE;
+		DWORD is_executable = sections[i].Characteristics &
+				      IMAGE_SCN_MEM_EXECUTE;
+		DWORD is_writable = sections[i].Characteristics &
+				    IMAGE_SCN_MEM_WRITE;
 		DWORD protect;
 		if (is_executable)
 			protect = is_writable ? PAGE_EXECUTE_READWRITE :
