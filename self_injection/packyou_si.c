@@ -114,14 +114,16 @@ __attribute__((section("packyou"))) int unpack(void (**poep)(void))
 					(IMAGE_IMPORT_BY_NAME *)(curr_proc_base +
 								 value);
 
-				char *func_name = (char *)&(image_import->Name);
+				LPCSTR func_name =
+					(LPCSTR) & (image_import->Name);
 
 				/* Get function address by name */
 				fp = (void *)GetProcAddress(library, func_name);
 			} else {
 				/* Get function address by ordinal */
 				fp = (void *)GetProcAddress(
-					library, (LPSTR)IMAGE_ORDINAL32(value));
+					library,
+					(LPCSTR)IMAGE_ORDINAL32(value));
 			}
 
 			if (fp == NULL)
